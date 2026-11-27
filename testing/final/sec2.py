@@ -85,7 +85,7 @@ def main():
             print(f"  Error pos est:      {math.hypot(x, y):.0f} mm")
             print()
             print(f"  Orientación final:  "
-                  f"{'bien = inicial' if (dyaw_total < 5 or dyaw_total > 355) else 'mal - desviada ~' + f'{min(dyaw_total, 360-dyaw_total):.0f}°'}")
+                  f"{'aprox a inicial' if (dyaw_total < 5 or dyaw_total > 355) else 'desviada ~' + f'{min(dyaw_total, 360-dyaw_total):.0f}°'}")
             print("=" * 50)
             print("\n>>> MIDE FÍSICAMENTE con cinta métrica:")
             print("    - Error lateral (Y):       ______ cm")
