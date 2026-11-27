@@ -50,7 +50,7 @@ def siguiente_en_cola():
 
 
 def simular_ruta(pedido_id):
-    time.sleep(T_RUTA)             # aquí luego va tu código real del robot
+    time.sleep(T_RUTA)             # aqui luego código real del robot
     if robot["estado"] == "EN_RUTA":
         robot["estado"] = "EN_MESA"
         buscar_pedido(pedido_id)["estado"] = "EN_MESA"
