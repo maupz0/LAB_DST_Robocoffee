@@ -164,7 +164,7 @@ def main():
                 'notas': notas
             })
 
-            print(f"\n✅ Test #{test_id} registrado")
+            print(f"\nTest #{test_id} registrado")
             print(f"   Resultado: {resultado}")
             print(f"   Error físico: {err_real:.0f}mm")
             print(f"   Duración: {dur_total:.1f}s")
