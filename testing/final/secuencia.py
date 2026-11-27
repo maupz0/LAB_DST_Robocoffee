@@ -47,7 +47,7 @@ def main():
             print(f"  Δyaw total:   {dyaw:.2f}°")
             print(f"  Pos final ≈   ({x:.0f}, {y:.0f}) mm")
             print(f"  Error pos ≈   {math.hypot(x, y):.0f} mm")
-            print(f"  Orientación:  {'✅ = inicial' if (dyaw < 5 or dyaw > 355) else '❌'}")
+            print(f"  Orientación:  {'aprox a inicial' if (dyaw < 5 or dyaw > 355) else 'desviado'}")
             print("=" * 40)
 
         finally:
