@@ -1,0 +1,706 @@
+\documentclass[lettersize,journal]{IEEEtran}
+
+\usepackage{amsmath,amsfonts}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{amssymb}   % [LabDST] Agregado en la revision para poder compilar \varnothing (ver R1.8)
+\usepackage{balance}
+\usepackage{float}
+
+\begin{document}
+
+%=================================================================
+\title{A Smart Cup-holder Module and Section-Based Delivery Model for Table-Side Coffee Service}
+
+\author{Adrián R. Oviedo Norieda, Alexis E. Hernández Paredes, César A. Solano Chávez, Mauricio Pérez Narváez, Raúl Bracamontes Plasencia, Jorge A. Lizarraga, Graciela Baca, Luis Enrique González-Jiménez and Luis F. Luque-Vega
+\thanks{The authors are with the Department of Technological and
+Industrial Processes, ITESO, Tlaquepaque 45604, Jalisco, Mexico.}}
+
+\markboth{LabDST RoboCoffee, ITESO}{}
+
+\maketitle
+
+%=================================================================
+\begin{abstract}
+In conventional coffee shop and coworking environments, customers often need to leave their tables to place or collect orders, interrupting their activities and reducing convenience and service efficiency. This work presents Robocoffee, a Smart Cup-holder Module integrated into a mobile service robot for autonomous table-side delivery. The proposed system combines an ESP32 embedded controller, wireless communication, and a weight-based cup detection subsystem implemented with a load cell and HX711 amplifier for beverage recognition and delivery verification. A trade-off analysis was conducted to select the sensing, processing, power, and mechanical subsystems. To evaluate platform behavior before physical deployment, a kinematic model of the differential-drive robot was developed and validated through MATLAB simulation. Simulation results demonstrated stable trajectory tracking during straight-line motion and turning maneuvers while avoiding singularities in position control. The developed prototype successfully integrates all the functions into a compact platform. The proposed approach contributes to service robotics by providing a low-cost and scalable solution that can improve customer experience, reduce service interruptions, and support future autonomous delivery applications in coffee shop and coworking environments.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Service robotics, table-side delivery, Smart Cup-holder Module, autonomous delivery.
+\end{IEEEkeywords}
+
+
+%=================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Problem Statement}
+\IEEEPARstart{I}{n} \linelabel{ln:ps}the conventional coffee shop service system, the customer must complete an \linelabel{ln:ps-11}11-step process as shown in the following diagram in Figure 1 that typically requires leaving their table to place and collect their order. This interruption represents a constant source of friction within their workday.
+
+\begin{figure}[!h]
+\centering 
+\includegraphics[width=3.4in]{figures/diagrama_de_flujo.jpeg} \caption{11-Step process diagram} 
+\label{fig:Block_diagram} 
+\end{figure}
+
+\textbf{Technical \linelabel{ln:obj-title}Objective}
+
+To \linelabel{ln:obj}propose an automated ordering and delivery logistics model in which the customer places an order directly from their table (conceived as a coworking workstation), the preparation of beverages remains the responsibility of the coffee shop staff, and delivery is performed autonomously through Robocoffee units operating on predefined routes, with the possibility of dividing the space into sections served by multiple robots to scale the service capacity.
+
+\textbf{Specific Objectives}
+
+\begin{itemize}
+    \item Design a QR-based ordering that eliminates customer displacement during the ordering process.
+
+    \item Develop an autonomous delivery model based on Robocoffee units operating on predefined routes between the preparation area and customer tables.
+
+    \item Evaluate the impact of the proposed model on order delivery time, compared with the conventional human-delivery workflow.
+
+    \item Assess the scalability of the proposed solution by analyzing the operation of the Robocoffee serving independent sections of the workspace.
+
+    \item Validate the feasibility of the proposed model through the defined performance indicator (KPIs)
+\end{itemize}
+
+Research \linelabel{ln:rq-title}Questions
+
+
+\begin{itemize}
+\item How do total cycle time and customer satisfaction change when the steps that currently require customer movement are removed from the process?
+\item Is it viable to divide the coffee shop space into sections served by multiple robots following fixed routes, and what impact does this have on simultaneous service capacity?
+\item How does this automated delivery model compare to the current staff-dependent model in terms of the predefined KPIs (Key Performance Indicator)\linelabel{ln:rq3-kpi}(table-side delivery, time compliance, and interruptions)?
+\end{itemize}
+
+\subsection{Guiding Research Question and Proposed Product}
+
+Guiding Question
+ \linelabel{ln:gq}Is it feasible to redesign a coffee shop ordering and delivery system so that customers receive their orders without leaving their workstation, by automating the delivery stage through mobile robots?
+
+ Proposed Product
+ \linelabel{ln:prod}An automated ordering and delivery system for coffee shops oriented toward coworking spaces, in which customers order directly from their table and receive their coffee through Robocoffee units operating on fixed routes within designated sections, eliminating the movement and waiting currently required of customers.
+
+ \subsection{Guided Observation and Functional Breakdown of the Demonstrator Module}
+ 
+For analysis purposes, the demonstrator was divided into five principal subsystems: locomotion, control, sensing, energy, and structure.
+
+The OAK9 is a differential-drive mobile robot whose planar configuration can be represented by the pose vector
+
+\begin{equation}
+    \xi = \begin{bmatrix} x & y & \theta \end{bmatrix}^{T},
+    \label{eq:placeholder_label}
+\end{equation}
+
+where \(x\) and \(x\) describe the position of the robot in a global reference frame and \(\theta\) represents its orientation. The platform is actuated by two independently driven wheels. Consequently, its motion is governed by the angular velocities of the left and right wheels, which constitute the main control inputs of the locomotion subsystem. This differential-drive arrangement allows forward and backward translation, curved trajectories, and rotation in place.
+
+The robot can be accessed through a Python library using a TCP connection. The available software interfaces expose functions associated with motors, battery monitoring, encoders, wheel velocity, inertial measurements, line sensing, ultrasonic sensing, pose estimation, orientation, position, wireless communication, indicators, and servo actuation.
+\subsubsection{Locomotion}
+
+The locomotion subsystem converts electrical power and motor commands into planar motion. Independent actuation of the left and right wheels produces a differential velocity that determines the translational and rotational motion of the platform.
+
+The subsystem receives desired PWM values. Its immediate outputs are the torques and angular velocities generated at the wheels.
+The model developed for the demonstrator also permits describing a control point displaced from the geometric midpoint of the wheel axle.
+
+The main limitations of the locomotion subsystem are associated with wheel slip, unequal motor response, mechanical backlash, friction, floor irregularities, wheel-radius uncertainty, and variations in wheel-ground contact. In addition, a differential-drive robot cannot independently command all three components of its planar pose \(x,y,\theta\) at a given instant.
+
+\subsubsection{Control}
+The control subsystem coordinates actuator commands, sensor acquisition, communication, and execution of motion routines.
+
+Its principal inputs are movement commands received through the communication channel, sensor measurements, encoder feedback, battery information, and internally defined references such as desired wheel velocity and orientation. Its outputs include PWM commands for the motors
+
+A relevant limitation is that the response of the complete control loop depends not only on the control algorithm but also on network latency, sampling frequency, motor-driver resolution, software execution time, and the quality of the feedback signals. The use of open-loop PWM commands may produce different wheel velocities for nominally equal commands because of motor asymmetry, friction, battery-voltage variation, and manufacturing tolerances. Closed-loop wheel-velocity or position control can reduce this effect but remains dependent on encoder resolution and controller tuning.
+
+\subsubsection{Sensing}
+The sensing subsystem measures the internal state of the robot and selected characteristics of its surroundings. The demonstrator is provided with encoders, battery measurement, inertial measurement, line, ultrasonic and orientation.
+
+These measurements can be combined with the differential-drive model to estimate the change in position and orientation. The inertial measurement unit can supply measurements associated with linear acceleration and angular motion, while the ultrasonic and line sensors can provide information about nearby obstacles or features on the operating surface.
+
+The sensing subsystem is constrained by measurement noise, sensor range, resolution, sampling frequency, calibration quality, and mounting position. 
+Encoder-based odometry accumulates error over time because of wheel slip, incorrect wheel dimensions, or unequal wheel-ground contact can therefore produce a growing difference between the calculated and observed trajectories.
+
+\subsubsection{Energy}
+Its components comprise the battery, power-distribution connections, voltage-regulation stages, electrical protection elements, and charging interface. Battery voltage can also be treated as an informational output because it allows the controller to estimate the available energy and identify low-voltage operating conditions.
+
+Its main limitations include finite operating time, voltage reduction under load, maximum discharge current, charging time, battery aging, and possible electrical noise generated by motor switching.
+
+\subsubsection{Structural}
+The structural subsystem provides physical support and maintains the relative position of the mechanical, electronic, and sensing components. It includes the chassis, wheel supports, motor mounts, sensor brackets, protective elements, fasteners, and mounting surfaces for additional modules.
+
+The structural geometry determines important model parameters, including the wheel separation \(L\), wheel radius \(\rho\), sensor position, center of mass, and the displacement between the axle midpoint and any point selected for trajectory control.
+
+The principal limitations of the structural subsystem include component misalignment, limited payload capacity, changes in the center of mass, and small geometric deviations that can affect the trajectory because the kinematic model assumes fixed and accurately known dimensions.
+
+ \subsection{Service Process Breakdown}
+By \linelabel{ln:obs-demo}observing the coffee shop production and service system, the 11 identified processes can be grouped into five functional blocks, each with a different level of human dependency:
+
+\begin{itemize}
+    \item Ordering Block (Step 1)
+ Currently requires the customer to physically approach the ordering counter. This is the first intervention point of the proposal: the process is transferred to an interface located at the table/workstation.
+    \item Payment Validation Block (Steps 2–3)
+ Verification and payment collection; this can remain linked to the new ordering interface without requiring customer movement.
+    \item Production Block (Steps 4–6)
+ Preparation queue, beverage preparation, and quality control. This remains the responsibility of coffee shop staff and is not automated in this proposal.
+    \item Delivery Block (Steps 7–9)
+ Assignment, transportation, and physical delivery. This is the second intervention point: the human delivery worker is replaced by Robocoffee units operating on fixed routes, with the space divided into sections to serve multiple tables in parallel.
+    \item Closing Block (Steps 10–11)
+ Delivery confirmation and transaction logging. This may be partially automated (for example, through a sensor or customer interaction with the table interface) to complete the cycle without additional staff intervention.
+
+ \linelabel{ln:blocks-end}Of the five blocks, the proposal directly intervenes in Blocks 1 (ordering) and 4 (delivery), which are the two stages where the customer is currently required to move or wait standing.
+ 
+\end{itemize}
+
+\subsection{Context Diagram, Stakeholder Map, Problem Tree, and Function Matrix}
+
+\linelabel{ln:stake}Stakeholder Map
+\begin{itemize}
+    \item Customer: Remains at their table/workstation throughout the entire cycle.
+    \item Ordering and Payment System: Table-side interface replacing face-to-face interaction at the cashier.
+    \item Barista / Production Staff: Unchanged; continues preparing beverages.
+    \item Route Assignment System: Determines which Robocoffee unit serves each section/table.
+    \item Robocoffee Units: Perform physical deliveries within assigned sections.
+    \item Floor Staff: Supervision and exception handling (failed Step 10, route obstacles, etc.).    
+\end{itemize}
+
+\linelabel{ln:ptree}Problem Tree (Draft)
+
+Root Problem
+ \linelabel{ln:root}The customer must interrupt their activity (remote work) to request and/or receive their coffee.
+
+Causes:
+\begin{itemize}
+    \item In-person ordering process.
+    \item Delivery dependent on human staff with variable availability.
+\end{itemize}
+
+Effects:
+\begin{itemize}
+    \item Loss of productive time for the customer.
+    \item Friction in the user experience.
+    \item Reduced consumption frequency among home office and coworking users.
+\end{itemize}
+
+Based on the stakeholder analysis and the root problem identified, a functional assessment was conducted to evaluate how responsibilities could be redistributed through the implementation of the Robocoffee system. Table~\ref{tab1} presents the function matrix, comparing the current allocation of responsibilities with the proposed allocation in the redesigned service process.
+
+
+
+\begin{table}[!h]
+\centering
+\caption{Function Matrix}
+\label{tab1}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Function} & \textbf{Current Responsible} & \textbf{Proposed Responsible} \\
+\hline
+Receive order & Customer walks & Customer orders from\\
+& to cashier & their table\\
+\hline
+Validate and & Cashier & Table-side payment system \\
+process payment & & \\
+\hline
+Prepare beverage & Barista & Barista (unchanged)\\
+\hline
+Verify quality & Barista & Barista (unchanged)\\
+\hline
+Assign delivery & System Delivery & System Robocoffee\\
+& worker & \\
+\hline
+Transport order & Human delivery & Robocoffee (fixed route)\\
+& worker & \\
+\hline
+Physically deliver & Delivery worker & Robocoffee\\
+order & & \\
+\hline
+Confirm receipt & Customer at time  & Customer from their table \\
+& of delivery & (sensor or interface)\\
+\hline
+Log Completion & System & System (unchanged)\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Observation Log and Opportunity List}
+To identify potential areas for improvement, we created an observation log, as shown in Table II. The table summarizes the activities observed throughout the process and the main sources of friction encountered.
+
+\begin{table}[!h]
+\centering
+\caption{Observation Log Draft}
+\label{tab2}
+\begin{tabular}{|p{1.8cm}|p{3cm}|p{2.1cm}|}
+\hline
+\textbf{Observed Step} & \textbf{Observation} & \textbf{Identified Friction} \\
+\hline1-3. Order placement & Customer must walk to the cashier to place an order & Interrupts their activity at the table \\
+\hline4-6. Preparation queue & Customer waits standing or returns to their table without knowing the exact preparation time & Uncertainty regarding order readiness \\
+\hline7–9. Assignment, transport, and delivery & A human delivery worker must be available; their pace varies with workload& Inconsistent delivery times during peak hours\\
+\hline10-11. Receipt confirmation & Customer must be attentive to receive the order at the time of delivery & Depends on the customer’s immediate availability \\
+\hline
+\end{tabular}
+\end{table}
+
+\linelabel{ln:opp}Identified Opportunities
+\begin{itemize}
+    \item Remote ordering from the table: Eliminate customer movement when placing an order (Steps 1-3).
+    \item Real-time estimated delivery notifications: Provide customers with visibility into the status of their order without requiring them to ask or wait standing (Steps 4-6).
+    \item Section-based automated delivery: Replace human delivery workers with Robocoffee units following fixed routes, enabling parallel service to multiple tables without relying on a single person's availability (Steps 7–9).
+    \item Receipt confirmation without immediate customer intervention: Through sensors or a table interface, reducing dependency on the customer being immediately available to receive the order (Steps 10-11).
+    \item Section-based scalability: Divide the physical space into zones served by multiple Robocoffee units, allowing service capacity growth without increasing floor staff.
+\end{itemize}
+
+\subsection{Related Work}
+The literature relevant to this proposal can be grouped into three research streams that have largely evolved independently.
+
+\subsubsection{Individual Delivery Robots in Restaurants and Coffee Shops} \linelabel{ln:rw-waiter} Several low-cost waiter robot developments employ physical floor lines and RFID (Radio-Frequency Identification) technology to identify destination tables, delivering beverages or light orders from the kitchen to customers. \cite{Asif-2015} More recent versions of this approach report an average table-identification error of only 5\% using RFID and infrared line-following sensors. \cite{dai2024fleet} While this solves basic robot navigation, it remains limited to a single robot operating one table at a time, without fleet coordination. 
+
+\subsubsection{Remote Ordering Systems (QR/App-Based)} 
+\linelabel{ln:rw-qr} Focuses on enabling customers to place orders without leaving their seats through QR-code (Quick Response) menu systems or mobile applications. These studies report measurable improvements in table turnover and service accuracy by replacing in-person ordering. More advanced systems integrate QR-based ordering with queue management and real-time table availability. \cite{thummar2025dinewise} However, these solutions address ordering rather than delivery.
+
+\subsubsection{Task Allocation and Zone-Based Robot Fleets}
+
+\linelabel{ln:rw-fleet}To enable scaling with multiple robots, indoor fleet management research (warehouses and buildings) has explored zone-based robot allocation, including load-balancing models that assign different areas to autonomous vehicles and reinforcement-learning fleet management systems that determine task allocation in real time. \cite{meseguer2025taskallocation} This research provides the technical foundation for dividing a space into sections served by multiple robots but has been developed primarily for warehouses and buildings rather than table-service food environments.
+
+
+\linelabel{ln:rw-sum}Taken together, studies on autonomous delivery robots suggest that technical advances have progressed more rapidly than operational and business research addressing how such systems can be integrated into real-world service workflows.\cite{meseguer2025taskallocation}  \\
+
+\begin{table}[H]
+\centering
+\caption{Technology Benchmarking Table.}
+\label{tab3}
+\begin{tabular}{|p{1.5cm}|p{1.4cm}|p{1.3cm}|p{1cm}|p{1.6cm}|}
+\hline
+\textbf{Solution} & \textbf{Eliminates Customer Movement} & \textbf{Automates Delivery} & \textbf{Scalable} & \textbf{Applied to Coffee/Coworking} \\
+\hline
+Human waiter (current model) & No & No & Limited & Yes \\
+\hline
+Qr menu / ordering app & Yes & No & N/A & Partial \\
+\hline
+Individual waiter robot (line + RFID) & No & Yes & No & Not reported \\
+\hline
+Zone-based robot fleet (warehouses / buildings) & N/A & Yes & Yes (by sections) & Not reported \\
+\hline
+Robocoffee (proposed solution) & Yes & Yes & N/A & Yes \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering
+\caption{Needs and requirements Matrix.}
+\label{tab4}
+\begin{tabular}{|p{1.6cm}|p{6.5cm}|}
+\hline
+\textbf{KPI} & \textbf{Covered by existing literature?} \\
+\hline
+Table-side delivery & Partial. Only individual waiter robots, without scaling to multiple tables \\
+\hline
+Time Compliance & Partial. Zone allocation helps, but has not been applied to coffee shops \\
+\hline
+Interruptions & No. No reference addresses eliminating customer movement in a coffee shop context \\
+\hline
+Satisfaction & Partial. Addressed separately in robot acceptance studies or QR ordering studies, but not combined \\
+\hline
+Replenishment & Not covered by any identified reference \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Comparison: Demonstrator Module vs. Reported Solutions}
+
+\linelabel{ln:gap}No reported work simultaneously addresses both ends of the problem identified in the coffee shop service system: ordering without standing up and receiving the order through a scalable fleet of section-based robots. Individual waiter robots solve physical delivery but only as standalone units; QR systems solve remote ordering but not delivery; and zone-assignment research provides the technical basis for scaling multiple robots but has never been applied to a coworking-oriented coffee shop environment\cite{meseguer2025taskallocation} .
+
+\mbox{}\\
+\linelabel{ln:contrib}The Robocoffee proposal is distinguished by integrating these three research streams into a single system designed specifically for this context. This integration represents the primary contribution of the project compared with existing solutions reported in the literature.
+
+
+
+%=================================================================
+\section{Materials and Methods}
+\label{sec:methods}
+\subsection{System Architecture} \label{sec:architecture}
+\linelabel{ln:mm}The subsystem architecture of the proposed product is shown in Fig.~\ref{fig:Block_diagram}.
+
+\subsubsection{Processing and Communication Subsystem}
+\label{sec:subsystem}
+\linelabel{ln:mm-esp}An independent processing node is implemented using
+an ESP32 microcontroller, selected for its integrated Wi-Fi interface and low
+cost. The node connects as a station to the cafeteria's Wi-Fi network and sends
+the CUP\_PRESENT and CUP\_ABSENT events to the information server over HTTP,
+reusing the network infrastructure already used by the OAK9 robot and the mobile
+application, and avoiding an additional gateway node. The server is the only
+client of the OAK9 (single TCP connection) and issues its commands. ESP-NOW (Wireless Comunication Protocol) was considered as an alternative for lower latency, but it cannot be used from a
+mobile application and requires a dedicated gateway and a fixed radio channel
+shared with the router; it was therefore discarded.
+
+\subsubsection{Cup Detection Subsystem (Sensing)}
+\label{sec:sensing}
+\linelabel{ln:mm-sens} A load cell (5 kg) with HX711 amplifier is being used to measure cup weight and beverage level changes, although signal filtering is required to compensate for vibrations caused by robot motion.
+
+\subsubsection{User Interface and Feedback Subsystem}
+\label{sec:userinterface}
+\linelabel{ln:mm-led}A RGB (Red, Green, Blue) LED ring is incorporated to provide visual feedback. Status indications were defined as: green (ready), blue (cup detected/in transit), yellow (arrived and awaiting retrieval), and red (error or low battery).
+
+\subsubsection{Power Supply and Management Subsystem}
+\label{sec:powersupply}
+\linelabel{ln:mm-power}The Smart Cup-holder Module operates independently from the robot power system using a 3.7 V, 1,200 mAh LiPo battery (Lithium Polymer), a TP4056 USB-C charging module, and an MT3608 boost converter that supplies a regulated 5 V output to the electronics.
+
+\subsubsection{Power Budget and Estimated Autonomy}
+\label{sec:powerbudget}
+\linelabel{ln:mm-power-budget}A power budget is computed from the nominal and peak currents of each subsystem, referred to the 3.7~V battery rail and including the MT3608 conversion losses. Table~\ref{tab5} summarizes the results.
+
+\begin{table}[H]
+
+\centering
+\caption{Power Budget Referred to the 3.7~V Battery Rail}
+\label{tab5}
+\begin{tabular}{|p{3.2cm}|p{0.9cm}|p{1.3cm}|p{1.3cm}|}
+\hline
+\textbf{Component} & \textbf{V} & \textbf{I avg} & \textbf{I peak} \\
+\hline
+ESP32 (Wi-Fi station) & 3.3 & 80 mA & 350 mA \\
+\hline
+HX711 + load cell & 3.3 & 1.5 mA & 1.5 mA \\
+\hline
+WS2812B ring (30\% brightness) & 5 & 30 mA & 250 mA \\
+\hline
+MT3608 conversion losses ($\sim$15\%) & -- & included & -- \\
+\hline
+\textbf{Total at battery rail} & 3.7 & \textbf{$\sim$140 mA} & \textbf{$\sim$720 mA} \\
+\hline
+\end{tabular}
+\end{table}
+
+\linelabel{ln:mm-power-auto}Assuming a usable capacity of 85\% (1020~mAh) to protect the LiPo cell, the estimated continuous autonomy is $\sim$7~h, and $\sim$8~h under typical service load (LEDs off most of the time), which covers a standard coffee shop shift without battery swap. To reduce thermal stress on the cell, the TP4056 charge current was set to $\approx$500~mA ($\approx$0.42C) by adjusting $R_{\text{PROG}}$, and the WS2812B brightness is limited by firmware to 30\%.
+
+\begin{figure}[!h]
+\centering 
+\includegraphics[width=3.4in]{figures/cupholder_block_diagram_v2.png} \caption{Smart cup-holder block diagram: sensing, communication and power} 
+\label{fig:Block_diagram} 
+\end{figure}
+
+\subsubsection{Mechanical Subsystem and Mounting Interface}
+\label{sec:mechanicalsubsystem}
+\label{sec:mechanicalsubsystem}
+\begin{itemize}
+\item \linelabel{ln:mm-mech}
+The structure is currently an early version which is being manufactured using 3D printer with PLA materials (Bioplastic) and designed to rise the cup of coffee while maintaining an easy to produce and low weight module. Figure \ref{fig:SmartCupHolder}
+\end{itemize}
+
+\begin{figure}[!h]
+\centering 
+\includegraphics[width=2.6in]{figures/RC_rev3.png} \caption{Smart Cup-holder module early version.} 
+\label{fig:SmartCupHolder} 
+\end{figure}
+
+\subsection{Functional and Non-Functional Specifications}
+\label{sec:specifications}
+\linelabel{ln:spec}
+The operating requirements of the Smart Cup-Holder Module are classified as
+follows:
+\begin{itemize}
+  \item \linelabel{ln:spec-f} \textbf{Functional requirements}: The Smart Cup-holder Module
+  must detect beverage presence or a mass greater than 20~g and update the RGB
+  LED ring according to the operating status. On each state change, the ESP32
+  node sends a CUP\_PRESENT or CUP\_ABSENT message over Wi-Fi (HTTP) to the
+  information server, which coordinates the OAK9 robot and the mobile
+  application. The timing requirements are verified separately
+  \begin{enumerate}
+    \item \textbf{L1, local response:} the LED ring changes state within
+    200~ms, measured from the HX711 sample that crosses the 20~g threshold to
+    the LED update command.
+    \item \textbf{L2, link latency:} the message reaches the server with a
+    one-way latency below 200~ms at the 95th percentile (P95) and a
+    packet-loss rate below [X]\%.
+    \item \textbf{L3, command delivery:} the OAK9 receives the return command
+    within [Y]~s of the server receiving the message, measured with server
+    timestamps.
+  \end{enumerate}
+
+  \item \linelabel{ln:spec-nf} \textbf{Non-functional requirements}: The module
+  must maintain an outer diameter smaller than 200~mm to fit the OAK9 robot,
+  use a 4$\times$M3$\times$5 mounting pattern on a 100~mm PCD (Pitch Circle Diameter), have a total
+  weight below 350~g, and provide insulation against accidental liquid spills.
+\end{itemize}
+
+\subsection{Component Selection} \label{sec:component_selection} \linelabel{ln:trade}
+An FMEA (\ref{tabAMEF}) was conducted to guide the selection of the system components by comparing alternative solutions according to performance, robustness, integration complexity, and cost.
+Based on the results, the selected components and corresponding specifications are summarized in Table~\ref{tab7}.
+
+Sensing subsystem: TCRT5000 infrared sensor versus HX711-based load cell versus VL53L0X time-of-flight sensor. 
+Processing subsystem: autonomous ESP32 node versus direct integration with the OAK9 controller using UART or I\textsuperscript{2}C communication. Power subsystem: dedicated 1S LiPo battery with TP4056 charger and MT3608 boost converter versus direct power supply from the robot platform.
+
+\begin{table}[H]
+
+\centering
+\caption{FMEA}
+\label{tabAMEF}
+\begin{tabular}{|p{2.3cm}|p{0.9cm}|p{1.2cm}|p{1.2cm}|p{1cm}|}
+\hline
+\textbf{Risk} & \textbf{Severity} & \textbf{Frequency} & \textbf{Detection} & \textbf{Total} \\
+\hline
+Collision avoidance & 9 & 6 & 8 & 432 \\
+\hline
+Spill avoidance & 9 & 5 & 5 & 225 \\
+\hline
+Significant deviation & 6 & 6 & 6 & 216 \\
+\hline
+Packet loss & 6 & 4 & 6 & 144 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Risk Analysis and Mitigation}
+\label{sec:risk} \linelabel{ln:risk} Potential failure modes were identified and mitigation strategies were established as follows:
+\begin{itemize}
+\item 
+Collision avoidence: accepted due to time and budget constrains.
+Coffee spill onto electronics: mitigated through a covered and an elevated PCB arrangement.
+\item
+Wireless disconnection or packet loss: mitigated through a local retransmission protocol and Bluetooth Low Energy (BLE) fallback communication.
+\item 
+Significant deviation: mitigated trough  recalibration for each run.
+\end{itemize}
+
+
+\subsection{Kinematic Modeling and Simulation}
+\label{sec:KinematicModel}
+\linelabel{ln:km}The kinematic pose of the mobile platform carrying the Smart Cup-holder Module is defined as:
+$\xi_5 = [x_5,\, y_5,\, q_1]^T$
+\linelabel{ln:km-xy}where $(x_5, y_5)$  represents the global position of the delivery holder center (point $O_5$) and $q_1$ denotes the chassis orientation.
+
+\linelabel{ln:km-sing}Unlike the midpoint of the wheel axle (point $O_1$), which suffers from mathematical singularity in position tracking, selecting the offset point $O_5$ at a distance $||r1,5|| > 0$ makes the local 2×2 position transformation matrix invertible. \linelabel{ln:km-hol}This yields locally holonomic position kinematics, allowing instantaneous trajectory tracking without singular constraints.
+\linelabel{ln:km-q1}The chassis angular velocity $\dot{q}_1$, given by \eqref{eq:q1} depends on the wheel radius $\rho$, the total wheelbase distance $(|r_{1,2}| + |r_{1,3}|)$, and \linelabel{ln:km-rl}the difference between the right and left wheel angular velocities $(\dot{q_2} - \dot{q_3})$:
+
+\begin{equation} \dot{q}_1 = \frac{\rho}{\left(|r_{1,2}| + |r_{1,3}|\right)} \left(\dot{q}_2 - \dot{q}_3\right) \label{eq:q1} \end{equation}
+
+
+\linelabel{ln:km-vel}The linear velocity components along the global axes $(\dot{x_5}, \dot{y_5})$ are computed directly from the wheel angular velocities $(\dot{q_2}, \dot{q_3})$ and the orientation $q_1$:
+
+\begin{equation} \begin{aligned} \dot{x}_5 =\;& \left[ \left(\frac{\rho}{2}\right)\cos q_1 -\frac{|r_{1,5}|\rho}{|r_{1,2}|+|r_{1,3}|}\sin q_1 \right]\dot{q}_2 \\ &+ \left[ \left(\frac{\rho}{2}\right)\cos q_1 +\frac{|r_{1,5}|\rho}{|r_{1,2}|+|r_{1,3}|}\sin q_1 \right]\dot{q}_3 \end{aligned} \label{eq:xdot} \end{equation} \begin{equation} \begin{aligned} \dot{y}_5 =\;& \left[ \left(\frac{\rho}{2}\right)\sin q_1 +\frac{|r_{1,5}|\rho}{|r_{1,2}|+|r_{1,3}|}\cos q_1 \right]\dot{q}_2 \\ &+ \left[ \left(\frac{\rho}{2}\right)\sin q_1 -\frac{|r_{1,5}|\rho}{|r_{1,2}|+|r_{1,3}|}\cos q_1 \right]\dot{q}_3 \end{aligned} \label{eq:ydot} \end{equation}
+
+\linelabel{ln:km-euler}The pose is integrated with \eqref{eq:xint}--\eqref{eq:qint} using the velocities in \eqref{eq:xdot}--\eqref{eq:ydot}.
+
+\begin{align} x_5[k+1] &= x_5[k] + \dot{x}_5 \,\Delta t \label{eq:xint} \\ y_5[k+1] &= y_5[k] + \dot{y}_5 \,\Delta t \label{eq:yint} \\ q_1[k+1] &= q_1[k] + \dot{q}_1 \,\Delta t \label{eq:qint} \end{align}
+
+
+\begin{figure}[!h] 
+\centering 
+\includegraphics[width=3.0in]{figures/Architecture_and_reference_point.png} 
+\caption{Architecture and reference points.} \label{fig:architecture_and_referencepoints} 
+\end{figure} 
+\begin{figure}[!h] 
+\centering 
+\includegraphics[width=3.0in]{figures/orientation_q1.png} 
+\caption{Orientation profile $q_1(t)$.}
+\label{fig:orientation_q1}
+\end{figure} 
+\begin{figure}[!h] 
+\centering 
+\includegraphics[width=3.0in]{figures/simulation.png} \caption{Simulated robot trajectory.} 
+\label{fig:simulation} 
+\end{figure}
+
+\begin{table*}[!t] 
+\centering 
+\caption{Bill of Materials (BOM)} 
+\label{tab7}
+\small \begin{tabular}{|p{2cm}|p{5.6cm}|p{4.5cm}|p{1.9cm}|p{0.8cm}|p{1cm}|} \hline 
+\textbf{Subsystem} & \textbf{Item / Component Specification} & \textbf{Key Function / Application} & \textbf{Manufacturer/ Provider} & \textbf{Qty} & \textbf{Price} \\ \hline Processing and Comms & ESP32-C3 / ESP32-WROOM-32 Microcontroller & Local processing and ESP-Wi-Fi communication & Espressiff & 1 & 156.00 mxn \\ \hline Sensing & Load Cell (HR0399C) and signal amplifier (HX711) & Cup detection and product recognition & Avia Semiconductor & 1 & 82.99 mxn\\ \hline User Interface & 4 pins RGB Led (RAGB) & 360$^\circ$ visual status feedback & Okystar & 3 & 1.00 mxn \\ \hline Power Storage & 3.7V 1S LiPo Battery (1200 mAh) & Power supply & UNIT Electronics & 1 & 109.68 mxn \\ \hline Power Management & TP4056 USB-C Charge Management Board & Safe LiPo battery charging and protection & TPower & 1 & 44.99 mxn \\ \hline Power Regulation & MT3608 DC-DC Step-Up Boost Converter & Elevates 3.7V battery rail to a stable 5V rail & Aerosemi & 1 & 45.99 mxn \\ \hline Mechanical Enclosure & 3D Elegoo PLA Filament & Physical structure and mounting interface & Elegoo & 90g & 32.5 mxn  \\ \hline
+Mechanical Enclosure & M6 Threaded Rod (130 mm) & Physical structure  & APISA & 3 & 4.68 mxn \\ \hline 
+Mechanical Enclosure & M6 nut & Asembly of the physical structure  & APISA & 6 & 6.00 mxn \\ \hline 
+Fastener & M5 $\times$ 8 mm Hex Socket Screws & Mechanical coupling load cell to Smart Cup-holder Module & APISA & 2 & 2.00 mxn \\ \hline 
+Fasteners & M3 $\times$ 8 mm Hex Socket Screws & Mechanical coupling to OAK-D9 top pattern & APISA & 3 & 3.00 mxn \\ \hline 
+\end{tabular} 
+\end{table*}
+%\vfill\null \columnbreak   % [LabDST] Comentado en la revision para poder compilar (ver R1.8)
+\newpage
+\subsection{Simulation Setup and Trajectory Results}
+\linelabel{ln:sim}To validate the kinematic behavior of the differential base before physical integration, a numerical simulation was \linelabel{ln:sim-matlab}executed in MATLAB. The simulation evaluates a three-stage motion profile over a total time $T_f = 20$ s with an integration step $\Delta t = 0.01$ s. The geometric configuration and reference points used in the model are shown in Fig.~\ref{fig:architecture_and_referencepoints}. 
+\begin{itemize} 
+\item \linelabel{ln:sim-s1}Initial linear trajectory ($t < 5$ s): Both wheels operate at equal angular velocities ($\dot{q}_2 = 2$ rad/s, $\dot{q}_3 = 2$ rad/s), producing straight-line displacement without rotation ($\dot{q}_1 = 0$). 
+\item \linelabel{ln:sim-s2}Rotational turning maneuver ($q_1 < 2\pi$ rad): Asymmetric wheel velocities ($\dot{q}_2 = 3$ rad/s, $\dot{q}_3 = 1$ rad/s) generate chassis rotation, steering the robot through a full $360^\circ$ orientation change. 
+\item Linear recovery stage: Equal velocities ($\dot{q}_2 = 2$ rad/s, $\dot{q}_3 = 2$ rad/s) are restored to resume forward translation along the new heading. 
+\end{itemize} 
+
+
+
+\linelabel{ln:sim-res}The simulation records the trajectory coordinates $(X_5,Y_5)$ and orientation profile $Q_1(t)$, shown in Fig.~\ref{fig:orientation_q1}. Numerical results confirm smooth velocity propagation to the delivery holder center point $o_5$ without mathematical singularities, verifying that velocity transitions remain within stable limits for beverage transport. The resulting robot trajectory and final configuration are illustrated in Fig.~\ref{fig:simulation}. 
+
+%=================================================================
+\section{Design and Implementation of the Technological Solution}
+\label{sec:design}
+
+\subsection{Manufacturing of the Smart Cup-holder Module}
+
+To avoid complexity in the manufacturing, the CAD design implementation where developed with Bambu Lab A1 3D printer, using Elegoo PLA Filament (1.75 mm) and the software BambuStudio 2.8.2.61 Software. And with easy access materials, using a M6 stainless steel threaded rod with M6 nuts (##dimensiones##), and for the fastening, it was selected two M5-0.8 inox bolts for the load cell and three M3-5 inox bolt for the whole system.
+
+\subsection{Electronic Circuit Implementation}
+
+ The circuit (fig \ref{fig:wdiagram}) ) design prioritized simplicity, low-power consumption, and reduced maintenance requirements. 
+
+\begin{figure}[H] 
+\centering 
+\includegraphics[width=3.0in]{figures/Esquematico.png} \caption{Wiring Diagram.} 
+\label{fig:wdiagram} 
+\end{figure}
+
+All electronic components should be soldered to minimize electrical noise. Nevertheless, given the prototype nature of the system, a breadboard was employed rather than permanently soldering the components to the microcontroller, allowing for future modifications and adjustments.
+
+\subsection{Program development}
+
+The ESP32 microcontroller enables the development of the Smart Cup-holder Module firmware using the Arduino IDE (version 2.3.6). The implementation relies on the HX711 Arduino Library by Bogdan Necula (version 0.7.5), as well as the WiFi and WebServer libraries provided by the Arduino framework.
+
+For the HX711 apmlifier module, calibration might be a necesary step only if you are considering a constant update in the inventory of products.
+
+Sensor calibration is only required for continuous menu updates to ensure accurate conversion of raw readings into grams. Alternatively, raw values can be used for product measurement. A tare operation is performed after each coffee dispensing cycle to compensate for accumulated load cell measurement errors.
+
+This section shows how the methods and materials from the
+previous section were turned into the actual built solution. Include,
+as applicable:
+\begin{itemize}
+\item The overall system architecture (block diagram) showing how
+the different subsystems interact.
+\item Mechanical, electronic, and/or software design decisions, with
+enough detail to be reproducible.
+\end{itemize}
+
+
+\subsection{Trajectory Control Implementation}
+\label{sec:control_impl}
+\linelabel{ln:impl-control}The control architecture was implemented directly on the OAK9 platform using its Python TCP interface, with the inertial measurement unit (IMU) providing yaw feedback and the wheel encoders providing distance feedback. Straight-line motion is regulated by a proportional-integral (PI) controller on yaw error with
+output saturation and integral anti-windup, commanding differential wheel velocities. A low-speed ramp phase ($v = 140$~mm/s during the first 200~mm) precedes the cruise phase ($v = 260$~mm/s) to reduce wheel slip caused by the passive caster. Turn maneuvers are executed by a closed-loop yaw controller with a post-convergence settle phase that mitigates the mechanical drag generated by the caster during in-place rotation.
+
+\linelabel{ln:impl-bias}Because the caster exerts a repeatable directional bias on the chassis after every turn, a deterministic yaw bias was empirically calibrated: commands of $86^\circ$, $172^\circ$ and $174^\circ$ were issued in place of $90^\circ$, $180^\circ$ (intermediate) and $180^\circ$ (closing), respectively. This empirical bias reduced the yaw drift from approximately $22^\circ$ per turn to below $12^\circ$ over the full four-turn pattern without requiring additional sensors. The evaluation pattern consists of four straight segments of 1000~mm each, joined by four turns that return the platform to its starting pose (total path $\approx 4$~m per cycle).
+
+
+%=================================================================
+
+\section{Results}
+
+\subsection{Functional Test}
+
+\label{sec:functional_test}
+
+\linelabel{ln:ft-setup}The closed-loop trajectory control was evaluated through ten consecutive executions of the four-segment pattern described in Section~\ref{sec:control_impl}. The physical position error was measured at the end of each cycle using a tape measure referenced to the floor starting mark, decomposing the error into lateral (perpendicular to the initial heading) and longitudinal (along the initial heading) components. The yaw error was extracted from the onboard IMU. 
+
+Table~\ref{tab:functional_test} summarizes the results of the ten runs.
+
+\begin{table}[!ht] 
+\centering 
+\caption{Results of the 10-Run Functional Test on the 4-m Evaluation Pattern} \label{tab:functional_test} 
+\footnotesize \setlength{\tabcolsep}{3pt}
+\begin{tabular}{ |>{\centering\arraybackslash}p{0.9cm} |c|c|c|c|c |>{\centering\arraybackslash}p{1.25cm}|} \hline \textbf{Run} & \textbf{Time (s)} & $\boldsymbol{e_{lat}}$ \textbf{(mm)} & $\boldsymbol{e_{lon}}$ \textbf{(mm)} & $\boldsymbol{e_{tot}}$ \textbf{(mm)} & $\boldsymbol{\Delta\theta}$ \textbf{($^\circ$)} & \textbf{Status} \\ \hline 1 & 122.2 & 15 & 20 & 25 & 0.23 & Success \\ \hline 2 & 122.9 & 19 & 5 & 20 & 0.95 & Success \\ \hline 3 & 142.5 & 78 & 3 & 78 & 7.83 & Partial \\ \hline 4 & 110.7 & 56 & 11 & 57 & 8.59 & Partial \\ \hline 5 & 105.8 & 45 & 17 & 48 & 5.15 & Success \\ \hline 6 & 137.8 & 183 & 90 & 204 & 11.59 & Miss \\ \hline 7 & 101.5 & 69 & 33 & 76 & 8.52 & Partial \\ \hline 8 & 106.7 & 34 & 14 & 37 & 11.59 & Success \\ \hline 9 & 105.2 & 78 & 29 & 83 & 10.90 & Partial \\ \hline 10 & 99.3 & 31 & 8 & 32 & 9.30 & Success \\ \hline \textbf{Mean} & \textbf{115.5} & \textbf{60.8} & \textbf{23.0} & \textbf{66.0} & \textbf{7.5} & -- \\ \hline \textbf{Median} & -- & -- & -- & \textbf{52.5} & -- & -- \\ \hline 
+\end{tabular} 
+\end{table}
+
+\linelabel{ln:ft-analysis}\textbf{Test protocol and result interpretation.} Each of the ten runs was initiated from a re-zeroed home position, mirroring the return-to-dock behavior of deployed autonomous mobile robots in service environments. The evaluation therefore characterizes the per-delivery accuracy of the platform, which is the relevant metric for table-side coffee service where the robot returns to the kitchen between consecutive deliveries. Multi-cycle accumulation without re-localization was not evaluated in this study and is identified as a limitation in Section~\ref{sec:disc_caster}. Across the ten runs, the platform achieved a mean total positional error of $66.0$~mm (median $52.5$~mm) on the 4-m evaluation pattern, equivalent to $1.65\%$ of the total trajectory length. The error is dominated by the lateral component (mean $60.8$~mm) rather than the longitudinal component (mean $23.0$~mm), consistent with the caster-induced drag analyzed in Section~\ref{sec:disc_caster}. The yaw error remained below $12^\circ$ in all runs (mean $7.5 \pm 4.3^\circ$), with the largest values coinciding with the runs that also exhibited the largest positional error.
+
+
+\linelabel{ln:ft-kpis}The KPIs defined in Section~\ref{sec:intro} are then evaluated from these ten runs, as summarized in Table~\ref{tab:kpis}. The table-side delivery KPI, defined as a total positional error below $100$~mm, is met in 9 of the 10 runs (90\%), with the single miss corresponding to the caster-jam event discussed above. The time compliance KPI is met with a mean cycle time of $115.5 \pm 15.2$~s, comfortably below the service target. The interruptions KPI is satisfied in all ten runs: the customer did not need to leave the table and no manual intervention on the platform was required to complete the cycle. These three KPIs confirm that the proposed platform meets the core service requirements defined at the project's outset.
+
+
+\begin{table}[!ht]
+\centering
+\caption{KPI Evaluation from the 10-Run Functional Test}
+\label{tab:kpis}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|p{4.2cm}|c|p{1.6cm}|}
+\hline
+\textbf{KPI} & \textbf{Value} & \textbf{Status} \\
+\hline
+Table-side delivery ($e_{tot} < 100$~mm) & 90\% (9/10) & Met \\
+\hline
+Time compliance (mean cycle time) & 115.5 $\pm$ 15.2~s & Met \\
+\hline
+Customer interruptions & 0 / 10 & Met \\
+\hline
+Full success rate ($e_{tot} < 50$~mm) & 50\% (5/10) & Partial \\
+\hline
+Reliability (no miss) & 90\% (9/10) & Met \\
+\hline
+Yaw orientation error & 7.5 $\pm$ 4.3$^\circ$ & Met \\
+\hline
+\end{tabular}
+\end{table}
+
+
+%=================================================================
+\section{Discussion}
+
+\subsection{Caster-Induced Drag as the Dominant Error Source}
+\label{sec:disc_caster}
+
+\linelabel{ln:disc-caster}The experimental results identify the passive caster as
+the dominant source of residual error. Unlike the drive wheels, which are
+encoder-instrumented and velocity-controlled, the caster has no feedback and no
+actuation. During in-place turns it must swivel to realign with the new heading,
+and because this swivel is not instantaneous, it ends each turn at an arbitrary
+orientation and exerts a repeatable directional drag on the chassis during the
+first millimeters of the subsequent straight segment, until it settles into the
+trailing position.
+
+\linelabel{ln:disc-caster-evidence}Two observations confirm this mechanism:
+
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+\begin{itemize}
+\item \textbf{The error is sideways, not forward.} The lateral component
+(mean $60.8$~mm) is approximately $2.6$ times larger than the longitudinal
+component (mean $23.0$~mm), which is the expected signature of a chassis
+being dragged sideways during each turn rather than overshooting forward
+or backward.
+
+\item \textbf{The slowest runs have the largest errors.} Runs~3 and~6, which
+took $142.5$~s and $137.8$~s respectively (vs.\ a mean of $115.5$~s), are also
+the two runs with the largest positional error. This indicates that the caster
+jammed during those runs, forcing the controller to work against a larger
+mechanical disturbance.
+\end{itemize}
+
+\linelabel{ln:disc-caster-mitig}Two software-level mitigations were implemented:
+a low-speed ramp ($v=140$~mm/s during the first 200~mm) to reduce wheel slip,
+and an empirical yaw bias ($86^\circ$/$172^\circ$/$174^\circ$ in place of
+$90^\circ$/$180^\circ$/$180^\circ$) that pre-compensates the repeatable direction
+of the drift, reducing the accumulated yaw error from approximately $22^\circ$
+to below $12^\circ$ over the four-turn pattern. Neither mitigation eliminates
+the caster's effect: it remains a hardware limitation that bounds the achievable
+accuracy of the current prototype.
+
+%=================================================================
+\section{Conclusions}
+
+\linelabel{ln:concl-caster}The dominant limitation identified by the experimental
+evaluation is the mechanical drag of the passive caster, which accounts for the
+lateral component of the positional error and for the single miss observed in the
+ten-run set. This effect is a hardware limitation rather than a control problem:
+it cannot be eliminated by tuning the trajectory controller, as demonstrated by
+the software mitigations evaluated in this work, which reduce but do not
+eliminate the drift. Nevertheless, the per-delivery accuracy achieved
+(mean $66.0$~mm, $90\%$ of runs below the $100$~mm acceptance threshold) is
+sufficient for the target application, because the compact coffee cup remains
+within the delivery zone of the workstation even at the observed error levels.
+Replacing the passive caster with a low-friction alternative (silicone wheel or
+ball transfer unit) is identified as the most promising hardware upgrade to
+further reduce the residual error in future iterations of the platform.
+
+%=================================================================
+\section*{Author Contributions}
+
+\section*{Data Availability}
+
+\section*{Acknowledgment}
+
+\section*{Conflicts of Interest}
+
+%=================================================================
+\balance
+\newpage
+%[LabDST] Desactivado temporalmente: el texto aun no contiene \cite{} (ver observaciones).
+\bibliographystyle{IEEEtran}
+\bibliography{bibliography}
+
+\end{document}

@@ -1,0 +1,7 @@
+﻿oak9venv/
+venv/
+__pycache__/
+*.pyc
+*.db
+*.zip
+*.egg-info/

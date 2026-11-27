@@ -1,0 +1,55 @@
+Materials and methods
+
+1. processing and communication subsystem
+
+the selection of an autonomous module rises with the need of independency from the robots main board, a compact microcontrollerr with native wireless will be used for the comunication and processing of the cupholder system. 
+
+selected option esp32
+
+this microcontroller features integrated wi-fi and bluetooth, as well its own comunication protocol. the protocol esp-now offers low-latency direct communication between esp32 boards without routing. the ultra compact build and very low power consumption in sleep mode aligns with the restriction of space on the robot.
+
+2. cup detection (sensing):
+
+option a: infrared proximity module TCRT500
+
+works by emitting IR light and detecting the reflection when the cup is plaed. advantages include cost-effective sensing with little to none error. the module provides a direct digital output that can be processed. although it can be sensible to ambien light variation or cup color. 
+
+option b: load cell(1kg) + hx711 amplifier module
+
+able to measure the exact weight of via mechanical deformation. with the added benefit of not only detecting cup presence but also wether it is full or has been completely removed by the customer. while offering a greater scope of sensing it requieres digital software to ignore robot vibrations while in movement. 
+
+3. interface and feedback system and feedback system 
+
+module must visually communicate the status of and order both to the server and the customer. an intuitive option lies with the use of an led ring
+
+option: neopixel rgb led ring ws2812b
+
+while not being essential for the operation of the robot a led ring allows for an easy to to dfierentiate status of an order. dynamic color codes would include the following.
+
+
+green - ready to receive 
+blue - cup detected, in transit to designated table 
+yellow - iddle, arrived at the table and waiting for cup removal 
+red - error or low battery 
+
+
+4. power supply and management subsystem
+
+since the cupholder module will not draw power from the oak9 battery it requires its own compact power source
+
+key components: 
+
+- battery: 3.7v (1s) lipo, 500/1000 mah, compact and lightweight
+- charging module: imax rc b3 20w for easy recharging 
+- boost regulator: MT3608 step-up module to up the voltage from 3.7v to a steady 5v for esp32, sensors and leds
+
+
+5. mechanical subsystem and mounting 
+
+made to physically fit onto the top of the robot. 
+
+casing and 3d printing: structure printed in PLA filament designed to attach to the robot's top-cover mounting pattern. the mounting pattern includes 4-hole M3x5 bolt pattern on a 100 mm pitch circle diameter (PCD), and an outer diameter (OD) under 200 mm. as well as a flexible ring to hold the cup in place via friction and prevent it from tipping over during acceleration 
+
+
+
+

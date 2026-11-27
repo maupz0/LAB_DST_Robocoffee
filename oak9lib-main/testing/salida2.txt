@@ -1,0 +1,45 @@
+Robot en la marca, caster alineado. Enter para (1000, 300)...
+yaw0=1163.35 giro=16.7 dist=1044
+giro listo, yaw=1178.42 (target 1180.05)
+ 0.0s hecho=     0 yaw_err=  1.63 integ= 10.03 L= 194.4 R= 205.6
+ 0.2s hecho=     6 yaw_err=  1.12 integ= 10.20 L= 194.8 R= 205.2
+ 0.4s hecho=    27 yaw_err= -4.67 integ=  8.92 L= 201.1 R= 198.9
+ 1.3s hecho=    96 yaw_err=-15.45 integ= -3.72 L= 216.9 R= 183.1
+ 1.7s hecho=   140 yaw_err=-15.94 integ=-10.34 L= 220.1 R= 179.9
+ 1.9s hecho=   166 yaw_err=-15.66 integ=-13.86 L= 221.2 R= 178.8
+ 2.1s hecho=   188 yaw_err=-13.08 integ=-16.98 L= 219.9 R= 180.1
+ 2.4s hecho=   228 yaw_err=-12.08 integ=-20.37 L= 220.2 R= 179.8
+ 2.6s hecho=   247 yaw_err=-10.82 integ=-22.48 L= 219.8 R= 180.2
+ 2.8s hecho=   270 yaw_err=-10.01 integ=-24.48 L= 219.8 R= 180.2
+ 3.2s hecho=   315 yaw_err= -7.57 integ=-27.21 L= 218.5 R= 181.5
+ 3.6s hecho=   365 yaw_err= -4.33 integ=-29.14 L= 216.0 R= 184.0
+ 3.8s hecho=   390 yaw_err= -2.49 integ=-29.71 L= 214.4 R= 185.6
+ 4.0s hecho=   411 yaw_err= -0.79 integ=-29.85 L= 212.7 R= 187.3
+ 4.3s hecho=   442 yaw_err=  0.69 integ=-29.69 L= 211.2 R= 188.8
+ 4.4s hecho=   456 yaw_err=  1.33 integ=-29.52 L= 210.5 R= 189.5
+ 4.6s hecho=   471 yaw_err=  2.16 integ=-29.14 L= 209.5 R= 190.5
+ 4.7s hecho=   497 yaw_err=  3.33 integ=-28.52 L= 208.1 R= 191.9
+ 5.0s hecho=   521 yaw_err=  4.25 integ=-27.40 L= 206.7 R= 193.3
+ 5.2s hecho=   545 yaw_err=  4.81 integ=-26.67 L= 205.9 R= 194.1
+ 5.5s hecho=   582 yaw_err=  6.59 integ=-24.69 L= 203.3 R= 196.7
+ 5.6s hecho=   598 yaw_err=  7.34 integ=-23.75 L= 202.2 R= 197.8
+ 5.8s hecho=   620 yaw_err=  8.31 integ=-21.95 L= 200.5 R= 199.5
+ 6.1s hecho=   654 yaw_err=  8.50 integ=-19.36 L= 199.2 R= 200.8
+ 6.8s hecho=   738 yaw_err=  8.94 integ=-12.85 L= 196.2 R= 203.8
+ 7.0s hecho=   761 yaw_err=  9.02 integ=-11.39 L= 195.5 R= 204.5
+ 7.2s hecho=   785 yaw_err=  9.35 integ= -9.09 L= 194.3 R= 205.7
+ 7.6s hecho=   835 yaw_err=  9.49 integ= -5.60 L= 192.7 R= 207.3
+ 7.8s hecho=   857 yaw_err=  8.75 integ= -3.64 L= 192.7 R= 207.3
+ 7.9s hecho=   870 yaw_err=  8.65 integ= -2.73 L= 192.4 R= 207.6
+ 8.1s hecho=   892 yaw_err=  8.54 integ= -1.18 L= 191.9 R= 208.1
+ 8.3s hecho=   916 yaw_err=  7.96 integ=  0.45 L= 191.9 R= 208.1
+ 8.8s hecho=   963 yaw_err=  6.83 integ=  0.45 L= 156.8 R= 168.2
+ 8.9s hecho=   977 yaw_err=  6.71 integ=  0.45 L= 129.9 R= 139.2
+ 9.0s hecho=   990 yaw_err=  6.81 integ=  0.45 L= 104.3 R= 111.8
+ 9.3s hecho=  1006 yaw_err=  7.22 integ=  0.45 L=  73.1 R=  78.7
+ 9.4s hecho=  1013 yaw_err=  7.33 integ=  0.45 L=  60.4 R=  65.1
+ 9.6s hecho=  1017 yaw_err=  7.14 integ=  0.45 L=  57.8 R=  62.2
+ 9.8s hecho=  1022 yaw_err=  7.18 integ=  0.45 L=  57.8 R=  62.2
+10.2s hecho=  1032 yaw_err=  7.21 integ=  0.45 L=  57.8 R=  62.2
+avance listo: 1050 mm, yaw=1172.99 (target 1180.05)
+enc: {'ok': True, 'raw_line': 'OK encoder.read left=4339 right=4590 left_deg=1741.40 right_deg=1842.14 cpr=897', 'command': 'encoder.read', 'left': 4339, 'right': 4590, 'left_deg': 1741.4, 'right_deg': 1842.14, 'cpr': 897}yaw final: 1172.99
